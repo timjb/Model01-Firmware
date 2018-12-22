@@ -1,0 +1,3 @@
+[submodule "deps/Kaleidoscope-LEDEffect-DigitalRain"]
+	path = deps/Kaleidoscope-LEDEffect-DigitalRain
+	url = https://github.com/tremby/Kaleidoscope-LEDEffect-DigitalRain.git

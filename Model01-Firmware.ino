@@ -69,6 +69,9 @@
 // Support for USB quirks, like changing the key state report protocol
 #include "Kaleidoscope-USB-Quirks.h"
 
+// Third-party plugin: "The Matrix'-like effect
+#include "Kaleidoscope-LEDEffect-DigitalRain.h"
+
 /** This 'enum' is a list of all the macros used by the Model 01's firmware
   * The names aren't particularly important. What is important is that each
   * is unique.
@@ -448,6 +451,9 @@ KALEIDOSCOPE_INIT_PLUGINS(
   // The rainbow wave effect lights up your keyboard with all the colors of a rainbow
   // and slowly moves the rainbow across your keyboard
   LEDRainbowWaveEffect,
+
+  // Third-party plugin: "The Matrix"-like effect
+  LEDDigitalRainEffect,
 
   // The chase effect follows the adventure of a blue pixel which chases a red pixel across
   // your keyboard. Spoiler: the blue pixel never catches the red pixel

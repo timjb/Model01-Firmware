@@ -1,14 +1,24 @@
 # Keyboardio Model 01 Firmware
 
-_The default firmware for the Keyboardio Model 01_
+_~~The default~~ Tim Baumann's customized firmware for the Keyboardio Model 01_
 
 <h3>This is a quick start guide for folks who are familiar with Arduino and prefer to use the command line. For everyone else:
 
- * [Check out the wiki](https://github.com/keyboardio/Kaleidoscope/wiki/Keyboardio-Model-01-Introduction) for a more in depth introduction to how the Model 01 keyboard and the Kaleidoscope firmware work. 
- 
+ * [Check out the wiki](https://github.com/keyboardio/Kaleidoscope/wiki/Keyboardio-Model-01-Introduction) for a more in depth introduction to how the Model 01 keyboard and the Kaleidoscope firmware work.
+
   * If you have questions, [The community forums are happy to help!](https://community.keyboard.io/)</h3>
 
 # Download and install
+
+## Set up dependencies
+
+First, download all dependencies:
+
+```sh
+git submodule init --update
+```
+
+Then, for each subdirectory of `deps/`, create a soft link from the Arduino libraries directory (`$HOME/Arduino/libraries`) to the subdirectory.
 
 ## Set up the Arduino IDE
 
@@ -30,17 +40,17 @@ If you install Arduino into some place that's /not/ `/usr/local/arduino`, you'll
 ### MacOS
 ```sh
 mkdir -p $HOME/Documents/Arduino
-cd $HOME/Documents/Arduino 
+cd $HOME/Documents/Arduino
 ```
 
 ### Linux
 
 ```sh
 mkdir -p $HOME/Arduino
-cd $HOME/Arduino 
+cd $HOME/Arduino
 ```
 
-## Download hardware platform, including library source code 
+## Download hardware platform, including library source code
 
 ```sh
 mkdir -p hardware
