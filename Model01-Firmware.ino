@@ -60,8 +60,16 @@
 // Support for USB quirks, like changing the key state report protocol
 #include "Kaleidoscope-USB-Quirks.h"
 
+// Support for unicode input
+#include "Kaleidoscope-Unicode.h"
+
 // Third-party plugin: "The Matrix'-like effect
 #include "Kaleidoscope-LEDEffect-DigitalRain.h"
+
+// Overload keys on your keyboard so that they produce one keycode (i.e. symbol)
+// when tapped, and a different keycode -- most likely a modifier
+// (e.g. shift or alt) -- when held
+#include <Kaleidoscope-Qukeys.h>
 
 /** This 'enum' is a list of all the macros used by the Model 01's firmware
   * The names aren't particularly important. What is important is that each
@@ -77,7 +85,11 @@
   */
 
 enum { MACRO_VERSION_INFO,
-       MACRO_ANY
+       MACRO_ANY,
+       MACRO_OE, // Öö
+       MACRO_AE, // Ää
+       MACRO_UE, // Üü
+       MACRO_SS  // ß
      };
 
 
@@ -314,16 +326,33 @@ static void anyKeyMacro(uint8_t keyState) {
 
  */
 
-const macro_t *macroAction(uint8_t macroIndex, uint8_t keyState) {
-  switch (macroIndex) {
+static void unicode(uint32_t character, uint8_t keyState) {
+  if (keyToggledOn(keyState)) {
+    Unicode.type(character);
+  }
+}
 
+const macro_t *macroAction(uint8_t macroIndex, uint8_t keyState) {
+  bool shifted = kaleidoscope::hid::wasModifierKeyActive(Key_LeftShift) || kaleidoscope::hid::wasModifierKeyActive(Key_RightShift);
+  switch (macroIndex) {
   case MACRO_VERSION_INFO:
     versionInfoMacro(keyState);
     break;
-
   case MACRO_ANY:
     anyKeyMacro(keyState);
     break;
+  case MACRO_OE:
+    unicode(shifted ? 0xD6 : 0xF6, keyState);
+    break;
+  case MACRO_UE:
+    unicode(shifted ? 0xDC : 0xFC, keyState);
+    break;
+  case MACRO_AE:
+    unicode(shifted ? 0xC4 : 0xE4, keyState);
+    break;
+  case MACRO_SS:
+    unicode(0xDF, keyState);
+  break;
   }
   return MACRO_NONE;
 }
@@ -439,6 +468,11 @@ KALEIDOSCOPE_INIT_PLUGINS(
   // The stalker effect lights up the keys you've pressed recently
   StalkerEffect,
 
+  // Overload keys on your keyboard so that they produce one keycode (i.e. symbol)
+  // when tapped, and a different keycode -- most likely a modifier
+  // (e.g. shift or alt) -- when held
+  Qukeys,
+
   // The numpad plugin is responsible for lighting up the 'numpad' mode
   // with a custom LED effect
   NumPad,
@@ -472,6 +506,13 @@ KALEIDOSCOPE_INIT_PLUGINS(
 void setup() {
   // First, call Kaleidoscope's internal setup function
   Kaleidoscope.setup();
+
+  QUKEYS(
+    kaleidoscope::Qukey(0, 1, 13, M(MACRO_OE)),
+    kaleidoscope::Qukey(0, 1, 11, M(MACRO_UE)),
+    kaleidoscope::Qukey(0, 2, 1, M(MACRO_AE)),
+    kaleidoscope::Qukey(0, 2, 2, M(MACRO_SS))
+  )
 
   // While we hope to improve this in the future, the NumPad plugin
   // needs to be explicitly told which keymap layer is your numpad layer
