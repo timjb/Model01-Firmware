@@ -396,7 +396,8 @@ void hostPowerManagementEventHandler(kaleidoscope::HostPowerManagement::Event ev
 enum {
   // Toggle between Boot (6-key rollover; for BIOSes and early boot) and NKRO
   // mode.
-  COMBO_TOGGLE_NKRO_MODE
+  COMBO_TOGGLE_NKRO_MODE,
+  COMBO_TOGGLE_CAPSLOCK
 };
 
 /** A tiny wrapper, to be used by MagicCombo.
@@ -407,13 +408,23 @@ static void toggleKeyboardProtocol(uint8_t combo_index) {
   USBQuirks.toggleKeyboardProtocol();
 }
 
+static void toggleCapsLock(uint8_t combo_index) {
+  Macros.play(MACRO(T(CapsLock)));
+}
+
 /** Magic combo list, a list of key combo and action pairs the firmware should
  * recognise.
  */
-USE_MAGIC_COMBOS({.action = toggleKeyboardProtocol,
-                  // Left Fn + Esc + Shift
-                  .keys = { R3C6, R2C6, R3C7 }
-                 });
+USE_MAGIC_COMBOS(
+  [COMBO_TOGGLE_NKRO_MODE] = {
+    .action = toggleKeyboardProtocol,
+    .keys   = { R3C6, R2C6, R2C7 } // Left Fn + Esc + Shift
+  },
+  [COMBO_TOGGLE_CAPSLOCK] = {
+    .action = toggleCapsLock,
+    .keys   = { R2C7, R2C8 } // Left Shift + Right Shift
+  }
+);
 
 // First, tell Kaleidoscope which plugins you want to use.
 // The order can be important. For example, LED effects are
