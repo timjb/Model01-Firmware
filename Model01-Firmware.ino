@@ -45,6 +45,9 @@
 // Support for LED modes that pulse the keyboard's LED in a rainbow pattern
 #include "Kaleidoscope-LEDEffect-Rainbow.h"
 
+// Support for an LED mode that makes waves of light splash out from each keypress
+#include "Kaleidoscope-LED-Wavepool.h"
+
 // Support for an LED mode that lights up the keys as you press them
 #include "Kaleidoscope-LED-Stalker.h"
 
@@ -392,11 +395,14 @@ KALEIDOSCOPE_INIT_PLUGINS(
   // Third-party plugin: "The Matrix"-like effect
   LEDDigitalRainEffect,
 
-  // The breathe effect slowly pulses all of the LEDs on your keyboard
-  LEDBreatheEffect,
+  // The wavepool effect makes waves of light splash out from each keypress.
+  WavepoolEffect,
 
   // The stalker effect lights up the keys you've pressed recently
   StalkerEffect,
+
+  // The breathe effect slowly pulses all of the LEDs on your keyboard
+  LEDBreatheEffect,
 
   // Overload keys on your keyboard so that they produce one keycode (i.e. symbol)
   // when tapped, and a different keycode -- most likely a modifier
@@ -457,6 +463,9 @@ void setup() {
   // 'BlazingTrail'. For details on other options, see
   // https://github.com/keyboardio/Kaleidoscope/blob/master/doc/plugin/LED-Stalker.md
   StalkerEffect.variant = STALKER(BlazingTrail);
+
+  // see https://github.com/keyboardio/Kaleidoscope/blob/master/doc/plugin/LED-Wavepool.md
+  WavepoolEffect.idle_timeout = 5000; // 5 seconds
 
   // We want to make sure that the firmware starts with LED effects off
   // This avoids over-taxing devices that don't have a lot of power to share
