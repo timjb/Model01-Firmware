@@ -74,6 +74,8 @@
 // (e.g. shift or alt) -- when held
 #include <Kaleidoscope-Qukeys.h>
 
+#include "LED-CapsLock.h"
+
 /** This 'enum' is a list of all the macros used by the Model 01's firmware
   * The names aren't particularly important. What is important is that each
   * is unique.
@@ -403,6 +405,9 @@ KALEIDOSCOPE_INIT_PLUGINS(
 
   // The breathe effect slowly pulses all of the LEDs on your keyboard
   LEDBreatheEffect,
+
+  // Make both shift keys shine white if capslock is active
+  LEDCapsLockEffect,
 
   // Overload keys on your keyboard so that they produce one keycode (i.e. symbol)
   // when tapped, and a different keycode -- most likely a modifier
