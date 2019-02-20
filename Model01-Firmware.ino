@@ -431,10 +431,10 @@ void setup() {
   Kaleidoscope.setup();
 
   QUKEYS(
-    kaleidoscope::Qukey(0, 1, 13, M(MACRO_OE)),
-    kaleidoscope::Qukey(0, 1, 11, M(MACRO_UE)),
-    kaleidoscope::Qukey(0, 2, 1, M(MACRO_AE)),
-    kaleidoscope::Qukey(0, 2, 2, M(MACRO_SS))
+    kaleidoscope::plugin::Qukey(0, 1, 13, M(MACRO_OE)),
+    kaleidoscope::plugin::Qukey(0, 1, 11, M(MACRO_UE)),
+    kaleidoscope::plugin::Qukey(0, 2, 1, M(MACRO_AE)),
+    kaleidoscope::plugin::Qukey(0, 2, 2, M(MACRO_SS))
   )
 
   // While we hope to improve this in the future, the NumPad plugin
