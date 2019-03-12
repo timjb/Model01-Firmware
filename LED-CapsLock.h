@@ -28,7 +28,7 @@ namespace plugin {
 
 class LEDCapsLockEffect : public kaleidoscope::Plugin {
   public:
-    // Event handlers. Delete what you don't need.
+    // Event handlers.
     EventHandlerResult afterEachCycle();
 
 };

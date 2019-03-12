@@ -65,11 +65,6 @@
 // Third-party plugin: "The Matrix'-like effect
 #include "Kaleidoscope-LEDEffect-DigitalRain.h"
 
-// Overload keys on your keyboard so that they produce one keycode (i.e. symbol)
-// when tapped, and a different keycode -- most likely a modifier
-// (e.g. shift or alt) -- when held
-#include <Kaleidoscope-Qukeys.h>
-
 #include "LED-CapsLock.h"
 
 /** This 'enum' is a list of all the macros used by the Model 01's firmware
@@ -87,10 +82,11 @@
 
 enum { MACRO_VERSION_INFO,
        MACRO_ANY,
-       MACRO_OE, // Öö
-       MACRO_AE, // Ää
-       MACRO_UE, // Üü
-       MACRO_SS  // ß
+       MACRO_A_AE, // aAäÄ
+       MACRO_E_EURO, // e€
+       MACRO_O_OE, // oOöÖ
+       MACRO_U_UE, // uUüÜ
+       MACRO_S_SS  // sSß
      };
 
 
@@ -153,18 +149,18 @@ enum { PRIMARY, NUMPAD, FUNCTION }; // layers
 KEYMAPS(
 
   [PRIMARY] = KEYMAP_STACKED
-  (___,          Key_1, Key_2, Key_3, Key_4, Key_5, Key_LEDEffectNext,
-   Key_Backtick, Key_Q, Key_W, Key_E, Key_R, Key_T, Key_PageUp,
-   Key_Escape,   Key_A, Key_S, Key_D, Key_F, Key_G,
-   Key_Tab,      Key_Z, Key_X, Key_C, Key_V, Key_B, Key_PageDown,
+  (___,             Key_1,         Key_2,         Key_3,           Key_4, Key_5, Key_LEDEffectNext,
+   Key_Backtick,    Key_Q,         Key_W,         M(MACRO_E_EURO), Key_R, Key_T, Key_PageUp,
+   Key_Escape,      M(MACRO_A_AE), M(MACRO_S_SS), Key_D,           Key_F, Key_G,
+   Key_Tab,         Key_Z,         Key_X,         Key_C,           Key_V, Key_B, Key_PageDown,
    Key_LeftControl, Key_Backspace, Key_LeftShift, Key_LeftGui,
    ShiftToLayer(FUNCTION),
 
-   M(MACRO_ANY), Key_6, Key_7, Key_8,     Key_9,         Key_0,         LockLayer(NUMPAD),
-   Key_Enter,    Key_Y, Key_U, Key_I,     Key_O,         Key_P,         Key_Equals,
-                 Key_H, Key_J, Key_K,     Key_L,         Key_Semicolon, Key_Quote,
-   MEH(Key_T),   Key_N, Key_M, Key_Comma, Key_Period,    Key_Slash,     Key_Minus,
-   Key_LeftAlt,  Key_RightShift, Key_Spacebar, Key_RightControl,
+   M(MACRO_ANY), Key_6,          Key_7,         Key_8,            Key_9,         Key_0,         LockLayer(NUMPAD),
+   Key_Enter,    Key_Y,          M(MACRO_U_UE), Key_I,            M(MACRO_O_OE), Key_P,         Key_Equals,
+                 Key_H,          Key_J,         Key_K,            Key_L,         Key_Semicolon, Key_Quote,
+   MEH(Key_T),   Key_N,          Key_M,         Key_Comma,        Key_Period,    Key_Slash,     Key_Minus,
+   Key_LeftAlt,  Key_RightShift, Key_Spacebar,  Key_RightControl,
    ShiftToLayer(FUNCTION)),
 
   [NUMPAD] =  KEYMAP_STACKED
@@ -246,14 +242,77 @@ static void anyKeyMacro(uint8_t keyState) {
 
  */
 
-static void unicode(uint32_t character, uint8_t keyState) {
-  if (keyToggledOn(keyState)) {
-    Unicode.type(character);
+class LongPress {
+
+private:
+  bool fired = false;
+  uint32_t start_time;
+
+public:
+  virtual void onToggledOn();
+  virtual void onLongPress();
+
+  void onKeyswitchEvent(uint8_t key_state) {
+    if (keyToggledOn(key_state)) {
+      fired = false;
+      start_time = Kaleidoscope.millisAtCycleStart();
+      onToggledOn();
+    } else if (keyIsPressed(key_state) && keyWasPressed(key_state) &&
+               !fired && Kaleidoscope.millisAtCycleStart() > start_time + 200) {
+      onLongPress();
+      fired = true;
+    }
   }
+
+};
+
+static void backspace() {
+  Macros.play(MACRO(T(Backspace)));
 }
 
+static bool isShifted() {
+  return kaleidoscope::hid::wasModifierKeyActive(Key_LeftShift) ||
+    kaleidoscope::hid::wasModifierKeyActive(Key_RightShift) ||
+    getCapsLockState();
+}
+
+static void toggleCapsLock() {
+  Macros.play(MACRO(T(CapsLock)));
+}
+
+static void typeUnicode(uint32_t character) {
+  bool capsLock = getCapsLockState();
+  if (capsLock) { toggleCapsLock(); }
+  Unicode.type(character);
+  if (capsLock) { toggleCapsLock(); }
+}
+
+class ALongPress final : public LongPress {
+  void onToggledOn() { Macros.play(MACRO(T(A))); }
+  void onLongPress() { backspace(); typeUnicode(isShifted() ? 0xC4 : 0xE4); }
+} aLongPress;
+
+class ELongPress final : public LongPress {
+  void onToggledOn() { Macros.play(MACRO(T(E))); }
+  void onLongPress() { backspace(); typeUnicode(0x20AC); }
+} eLongPress;
+
+class OLongPress final : public LongPress {
+  void onToggledOn() { Macros.play(MACRO(T(O))); }
+  void onLongPress() { backspace(); typeUnicode(isShifted() ? 0xD6 : 0xF6); }
+} oLongPress;
+
+class ULongPress final : public LongPress {
+  void onToggledOn() { Macros.play(MACRO(T(U))); }
+  void onLongPress() { backspace(); typeUnicode(isShifted() ? 0xDC : 0xFC); }
+} uLongPress;
+
+class SLongPress final : public LongPress {
+  void onToggledOn() { Macros.play(MACRO(T(S))); }
+  void onLongPress() { backspace(); typeUnicode(0xDF); }
+} sLongPress;
+
 const macro_t *macroAction(uint8_t macroIndex, uint8_t keyState) {
-  bool shifted = kaleidoscope::hid::wasModifierKeyActive(Key_LeftShift) || kaleidoscope::hid::wasModifierKeyActive(Key_RightShift);
   switch (macroIndex) {
   case MACRO_VERSION_INFO:
     versionInfoMacro(keyState);
@@ -261,22 +320,24 @@ const macro_t *macroAction(uint8_t macroIndex, uint8_t keyState) {
   case MACRO_ANY:
     anyKeyMacro(keyState);
     break;
-  case MACRO_OE:
-    unicode(shifted ? 0xD6 : 0xF6, keyState);
+  case MACRO_E_EURO:
+    eLongPress.onKeyswitchEvent(keyState);
     break;
-  case MACRO_UE:
-    unicode(shifted ? 0xDC : 0xFC, keyState);
+  case MACRO_O_OE:
+    oLongPress.onKeyswitchEvent(keyState);
     break;
-  case MACRO_AE:
-    unicode(shifted ? 0xC4 : 0xE4, keyState);
+  case MACRO_U_UE:
+    uLongPress.onKeyswitchEvent(keyState);
     break;
-  case MACRO_SS:
-    unicode(0xDF, keyState);
-  break;
+  case MACRO_A_AE:
+    aLongPress.onKeyswitchEvent(keyState);
+    break;
+  case MACRO_S_SS:
+    sLongPress.onKeyswitchEvent(keyState);
+    break;
   }
   return MACRO_NONE;
 }
-
 
 
 /** toggleLedsOnSuspendResume toggles the LEDs off when the host goes to sleep,
@@ -328,8 +389,8 @@ static void toggleKeyboardProtocol(uint8_t combo_index) {
   USBQuirks.toggleKeyboardProtocol();
 }
 
-static void toggleCapsLock(uint8_t combo_index) {
-  Macros.play(MACRO(T(CapsLock)));
+static void toggleCapsLockAction(uint8_t combo_index) {
+  toggleCapsLock();
 }
 
 /** Magic combo list, a list of key combo and action pairs the firmware should
@@ -341,7 +402,7 @@ USE_MAGIC_COMBOS(
     .keys   = { R3C6, R2C6, R2C7 } // Left Fn + Esc + Shift
   },
   [COMBO_TOGGLE_CAPSLOCK] = {
-    .action = toggleCapsLock,
+    .action = toggleCapsLockAction,
     .keys   = { R2C7, R2C8 } // Left Shift + Right Shift
   }
 );
@@ -391,11 +452,6 @@ KALEIDOSCOPE_INIT_PLUGINS(
   // Make both shift keys shine white if capslock is active
   LEDCapsLockEffect,
 
-  // Overload keys on your keyboard so that they produce one keycode (i.e. symbol)
-  // when tapped, and a different keycode -- most likely a modifier
-  // (e.g. shift or alt) -- when held
-  Qukeys,
-
   // The numpad plugin is responsible for lighting up the 'numpad' mode
   // with a custom LED effect
   NumPad,
@@ -429,13 +485,6 @@ KALEIDOSCOPE_INIT_PLUGINS(
 void setup() {
   // First, call Kaleidoscope's internal setup function
   Kaleidoscope.setup();
-
-  QUKEYS(
-    kaleidoscope::plugin::Qukey(0, 1, 13, M(MACRO_OE)),
-    kaleidoscope::plugin::Qukey(0, 1, 11, M(MACRO_UE)),
-    kaleidoscope::plugin::Qukey(0, 2, 1, M(MACRO_AE)),
-    kaleidoscope::plugin::Qukey(0, 2, 2, M(MACRO_SS))
-  )
 
   // While we hope to improve this in the future, the NumPad plugin
   // needs to be explicitly told which keymap layer is your numpad layer
