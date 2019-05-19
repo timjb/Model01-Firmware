@@ -62,6 +62,9 @@
 // Support for unicode input
 #include "Kaleidoscope-Unicode.h"
 
+// Support for host OS detection
+#include "Kaleidoscope-HostOS.h"
+
 // Third-party plugin: "The Matrix'-like effect
 #include "Kaleidoscope-LEDEffect-DigitalRain.h"
 
@@ -81,6 +84,8 @@
   */
 
 enum { MACRO_VERSION_INFO,
+       MACRO_SWITCH_OS,
+       MACRO_OS_INFO,
        MACRO_ANY,
        MACRO_A_AE, // aAäÄ
        MACRO_E_EURO, // e€
@@ -149,11 +154,11 @@ enum { PRIMARY, NUMPAD, FUNCTION }; // layers
 KEYMAPS(
 
   [PRIMARY] = KEYMAP_STACKED
-  (___,             Key_1,         Key_2,         Key_3,           Key_4, Key_5, Key_LEDEffectNext,
-   Key_Backtick,    Key_Q,         Key_W,         M(MACRO_E_EURO), Key_R, Key_T, Key_PageUp,
-   Key_Escape,      M(MACRO_A_AE), M(MACRO_S_SS), Key_D,           Key_F, Key_G,
-   Key_Tab,         Key_Z,         Key_X,         Key_C,           Key_V, Key_B, Key_PageDown,
-   Key_LeftControl, Key_Backspace, Key_LeftShift, Key_LeftGui,
+  (M(MACRO_SWITCH_OS), Key_1,         Key_2,         Key_3,           Key_4, Key_5, Key_LEDEffectNext,
+   Key_Backtick,       Key_Q,         Key_W,         M(MACRO_E_EURO), Key_R, Key_T, Key_PageUp,
+   Key_Escape,         M(MACRO_A_AE), M(MACRO_S_SS), Key_D,           Key_F, Key_G,
+   Key_Tab,            Key_Z,         Key_X,         Key_C,           Key_V, Key_B, Key_PageDown,
+   Key_LeftControl,    Key_Backspace, Key_LeftShift, Key_LeftGui,
    ShiftToLayer(FUNCTION),
 
    M(MACRO_ANY), Key_6,          Key_7,         Key_8,            Key_9,         Key_0,         LockLayer(NUMPAD),
@@ -164,7 +169,7 @@ KEYMAPS(
    ShiftToLayer(FUNCTION)),
 
   [NUMPAD] =  KEYMAP_STACKED
-  (___, ___, ___, ___, ___, ___, ___,
+  (M(MACRO_OS_INFO), ___, ___, ___, ___, ___, ___,
    ___, ___, ___, ___, ___, ___, ___,
    ___, ___, ___, ___, ___, ___,
    ___, ___, ___, ___, ___, ___, ___,
@@ -206,6 +211,39 @@ static void versionInfoMacro(uint8_t keyState) {
   if (keyToggledOn(keyState)) {
     Macros.type(PSTR("Keyboardio Model 01 - Kaleidoscope "));
     Macros.type(PSTR(BUILD_INFORMATION));
+  }
+}
+
+static void switchOsMacro(uint8_t keyState) {
+  if (!keyToggledOn(keyState)) { return; }
+  kaleidoscope::hostos::Type currentOs = HostOS.os(), nextOs = currentOs;
+  switch (currentOs) {
+  case kaleidoscope::hostos::LINUX:
+    nextOs = kaleidoscope::hostos::WINDOWS;
+    break;
+  default:
+    nextOs = kaleidoscope::hostos::LINUX;
+    break;
+  }
+  HostOS.os(nextOs);
+}
+
+static void osInfoMacro(uint8_t keyState) {
+  if (!keyToggledOn(keyState)) { return; }
+  kaleidoscope::hostos::Type currentOs = HostOS.os();
+  switch (currentOs) {
+  case kaleidoscope::hostos::LINUX:
+    Macros.type(PSTR("linux"));
+    break;
+  case kaleidoscope::hostos::WINDOWS:
+    Macros.type(PSTR("windows"));
+    break;
+  case kaleidoscope::hostos::OSX:
+    Macros.type(PSTR("osx"));
+    break;
+  case kaleidoscope::hostos::OTHER:
+    Macros.type(PSTR("other"));
+    break;
   }
 }
 
@@ -270,10 +308,13 @@ static void backspace() {
   Macros.play(MACRO(T(Backspace)));
 }
 
-static bool isShifted() {
+static bool wasShiftKeyActive() {
   return kaleidoscope::hid::wasModifierKeyActive(Key_LeftShift) ||
-    kaleidoscope::hid::wasModifierKeyActive(Key_RightShift) ||
-    getCapsLockState();
+    kaleidoscope::hid::wasModifierKeyActive(Key_RightShift);
+}
+
+static bool isShifted() {
+  return wasShiftKeyActive() || getCapsLockState();
 }
 
 static void toggleCapsLock() {
@@ -282,6 +323,12 @@ static void toggleCapsLock() {
 
 static void typeUnicode(uint32_t character) {
   bool capsLock = getCapsLockState();
+  if (HostOS.os() == kaleidoscope::hostos::WINDOWS && wasShiftKeyActive()) {
+    // Hex-input on Windows only works when shift is NOT pressed
+    kaleidoscope::hid::releaseRawKey(Key_LeftShift);
+    kaleidoscope::hid::releaseRawKey(Key_RightShift);
+    kaleidoscope::hid::sendKeyboardReport();
+  }
   if (capsLock) { toggleCapsLock(); }
   Unicode.type(character);
   if (capsLock) { toggleCapsLock(); }
@@ -316,6 +363,12 @@ const macro_t *macroAction(uint8_t macroIndex, uint8_t keyState) {
   switch (macroIndex) {
   case MACRO_VERSION_INFO:
     versionInfoMacro(keyState);
+    break;
+  case MACRO_SWITCH_OS:
+    switchOsMacro(keyState);
+    break;
+  case MACRO_OS_INFO:
+    osInfoMacro(keyState);
     break;
   case MACRO_ANY:
     anyKeyMacro(keyState);
@@ -470,6 +523,10 @@ KALEIDOSCOPE_INIT_PLUGINS(
   // actions - a bit like Macros, but triggered by pressing multiple keys at the
   // same time.
   MagicCombo,
+
+  // The HostOS extension is not all that useful in itself, rather, it is a building block other
+  // plugins and extensions can use to not repeat the same guesswork and logic.
+  HostOS,
 
   // The USBQuirks plugin lets you do some things with USB that we aren't
   // comfortable - or able - to do automatically, but can be useful
