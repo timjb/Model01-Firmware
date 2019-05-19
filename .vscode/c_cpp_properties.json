@@ -3,7 +3,8 @@
         {
             "name": "Linux",
             "includePath": [
-                "/home/.arduino15/packages/keyboardio/hardware/avr/1.94.0-beta/**"
+                "${workspaceFolder}/deps/**",
+                "${env:HOME}/.arduino15/packages/keyboardio/hardware/avr/1.94.0-beta/**"
             ],
             "forcedInclude": [],
             "intelliSenseMode": "gcc-x64",
