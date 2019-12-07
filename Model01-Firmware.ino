@@ -87,6 +87,7 @@ enum { MACRO_VERSION_INFO,
        MACRO_SWITCH_OS,
        MACRO_OS_INFO,
        MACRO_ANY,
+       MACRO_ISSUENUMBER,
        MACRO_A_AE, // aAäÄ
        MACRO_E_EURO, // e€
        MACRO_O_OE, // oOöÖ
@@ -155,7 +156,7 @@ KEYMAPS(
 
   [PRIMARY] = KEYMAP_STACKED
   (M(MACRO_SWITCH_OS), Key_1,         Key_2,         Key_3,           Key_4, Key_5, Key_LEDEffectNext,
-   Key_Backtick,       Key_Q,         Key_W,         M(MACRO_E_EURO), Key_R, Key_T, Key_PageUp,
+   Key_Backtick,       Key_Q,         Key_W,         M(MACRO_E_EURO), Key_R, Key_T, M(MACRO_ISSUENUMBER),
    Key_Escape,         M(MACRO_A_AE), M(MACRO_S_SS), Key_D,           Key_F, Key_G,
    Key_Tab,            Key_Z,         Key_X,         Key_C,           Key_V, Key_B, Key_PageDown,
    Key_LeftControl,    Key_Backspace, Key_LeftShift, Key_LeftGui,
@@ -255,6 +256,7 @@ static void osInfoMacro(uint8_t keyState) {
  *
  */
 
+
 static void anyKeyMacro(uint8_t keyState) {
   static Key lastKey;
   bool toggledOn = false;
@@ -265,6 +267,12 @@ static void anyKeyMacro(uint8_t keyState) {
 
   if (keyIsPressed(keyState))
     kaleidoscope::hid::pressKey(lastKey, toggledOn);
+}
+
+static void issueNumberMacro(uint8_t keyState) {
+  if (keyToggledOn(keyState)) {
+    Macros.type(PSTR("DEV_LOND2PLUS-"));
+  }
 }
 
 
@@ -372,6 +380,9 @@ const macro_t *macroAction(uint8_t macroIndex, uint8_t keyState) {
     break;
   case MACRO_ANY:
     anyKeyMacro(keyState);
+    break;
+  case MACRO_ISSUENUMBER:
+    issueNumberMacro(keyState);
     break;
   case MACRO_E_EURO:
     eLongPress.onKeyswitchEvent(keyState);
