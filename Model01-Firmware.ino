@@ -65,9 +65,6 @@
 // Support for unicode input
 #include "Kaleidoscope-Unicode.h"
 
-// Support for host OS detection
-#include "Kaleidoscope-HostOS.h"
-
 // Third-party plugin: "The Matrix'-like effect
 #include "Kaleidoscope-LEDEffect-DigitalRain.h"
 
@@ -87,15 +84,8 @@
   */
 
 enum { MACRO_VERSION_INFO,
-       MACRO_SWITCH_OS,
-       MACRO_OS_INFO,
        MACRO_ANY,
-       MACRO_TICKET_PREFIX,
-       MACRO_A_AE, // aAäÄ
-       MACRO_E_EURO, // e€
-       MACRO_O_OE, // oOöÖ
-       MACRO_U_UE, // uUüÜ
-       MACRO_S_SS  // sSß
+       MACRO_TICKET_PREFIX
      };
 
 
@@ -158,22 +148,22 @@ enum { PRIMARY, NUMPAD, FUNCTION }; // layers
 KEYMAPS(
 
   [PRIMARY] = KEYMAP_STACKED
-  (M(MACRO_SWITCH_OS), Key_1,         Key_2,         Key_3,           Key_4, Key_5, Key_LEDEffectNext,
-   Key_Backtick,       Key_Q,         Key_W,         M(MACRO_E_EURO), Key_R, Key_T, M(MACRO_TICKET_PREFIX),
-   Key_Escape,         M(MACRO_A_AE), M(MACRO_S_SS), Key_D,           Key_F, Key_G,
-   Key_Tab,            Key_Z,         Key_X,         Key_C,           Key_V, Key_B, Key_PageDown,
+  (MEH(Key_T),         Key_1,         Key_2,         Key_3,       Key_4, Key_5, Key_LEDEffectNext,
+   Key_Backtick,       Key_Q,         Key_W,         Key_E,       Key_R, Key_T, M(MACRO_TICKET_PREFIX),
+   Key_Escape,         Key_A,         Key_S,         Key_D,       Key_F, Key_G,
+   Key_Tab,            Key_Z,         Key_X,         Key_C,       Key_V, Key_B, Key_PageDown,
    Key_LeftControl,    Key_Backspace, Key_LeftShift, Key_LeftGui,
    ShiftToLayer(FUNCTION),
 
-   M(MACRO_ANY), Key_6,          Key_7,         Key_8,            Key_9,         Key_0,         LockLayer(NUMPAD),
-   Key_Enter,    Key_Y,          M(MACRO_U_UE), Key_I,            M(MACRO_O_OE), Key_P,         Key_Equals,
-                 Key_H,          Key_J,         Key_K,            Key_L,         Key_Semicolon, Key_Quote,
-   Key_RightAlt, Key_N,          Key_M,         Key_Comma,        Key_Period,    Key_Slash,     Key_Minus,
-   Key_LeftAlt,  Key_RightShift, Key_Spacebar,  Key_RightControl,
+   M(MACRO_ANY), Key_6,          Key_7,        Key_8,            Key_9,      Key_0,         LockLayer(NUMPAD),
+   Key_Enter,    Key_Y,          Key_U,        Key_I,            Key_O,      Key_P,         Key_Equals,
+                 Key_H,          Key_J,        Key_K,            Key_L,      Key_Semicolon, Key_Quote,
+   Key_RightAlt, Key_N,          Key_M,        Key_Comma,        Key_Period, Key_Slash,     Key_Minus,
+   Key_LeftAlt,  Key_RightShift, Key_Spacebar, Key_RightControl,
    ShiftToLayer(FUNCTION)),
 
   [NUMPAD] =  KEYMAP_STACKED
-  (M(MACRO_OS_INFO), ___, ___, ___, ___, ___, ___,
+  (___, ___, ___, ___, ___, ___, ___,
    ___, ___, ___, ___, ___, ___, ___,
    ___, ___, ___, ___, ___, ___,
    ___, ___, ___, ___, ___, ___, ___,
@@ -218,39 +208,6 @@ static void versionInfoMacro(uint8_t keyState) {
   }
 }
 
-static void switchOsMacro(uint8_t keyState) {
-  if (!keyToggledOn(keyState)) { return; }
-  kaleidoscope::hostos::Type currentOs = HostOS.os(), nextOs = currentOs;
-  switch (currentOs) {
-  case kaleidoscope::hostos::LINUX:
-    nextOs = kaleidoscope::hostos::WINDOWS;
-    break;
-  default:
-    nextOs = kaleidoscope::hostos::LINUX;
-    break;
-  }
-  HostOS.os(nextOs);
-}
-
-static void osInfoMacro(uint8_t keyState) {
-  if (!keyToggledOn(keyState)) { return; }
-  kaleidoscope::hostos::Type currentOs = HostOS.os();
-  switch (currentOs) {
-  case kaleidoscope::hostos::LINUX:
-    Macros.type(PSTR("linux"));
-    break;
-  case kaleidoscope::hostos::WINDOWS:
-    Macros.type(PSTR("windows"));
-    break;
-  case kaleidoscope::hostos::OSX:
-    Macros.type(PSTR("osx"));
-    break;
-  case kaleidoscope::hostos::OTHER:
-    Macros.type(PSTR("other"));
-    break;
-  }
-}
-
 /** anyKeyMacro is used to provide the functionality of the 'Any' key.
  *
  * When the 'any key' macro is toggled on, a random alphanumeric key is
@@ -258,8 +215,6 @@ static void osInfoMacro(uint8_t keyState) {
  * keypress event repeating that randomly selected key.
  *
  */
-
-
 static void anyKeyMacro(uint8_t keyState) {
   static Key lastKey;
   bool toggledOn = false;
@@ -302,95 +257,10 @@ static void ticketPrefixMacro(uint8_t keyState) {
 
  */
 
-class LongPress {
-
-private:
-  bool fired = false;
-  uint32_t start_time;
-
-public:
-  virtual void onToggledOn();
-  virtual void onLongPress();
-
-  void onKeyswitchEvent(uint8_t key_state) {
-    if (keyToggledOn(key_state)) {
-      fired = false;
-      start_time = Kaleidoscope.millisAtCycleStart();
-      onToggledOn();
-    } else if (keyIsPressed(key_state) && keyWasPressed(key_state) &&
-               !fired && Kaleidoscope.millisAtCycleStart() > start_time + 200) {
-      onLongPress();
-      fired = true;
-    }
-  }
-
-};
-
-static void backspace() {
-  Macros.play(MACRO(T(Backspace)));
-}
-
-static bool wasShiftKeyActive() {
-  return kaleidoscope::hid::wasModifierKeyActive(Key_LeftShift) ||
-    kaleidoscope::hid::wasModifierKeyActive(Key_RightShift);
-}
-
-static bool isShifted() {
-  return wasShiftKeyActive() || getCapsLockState();
-}
-
-static void toggleCapsLock() {
-  Macros.play(MACRO(T(CapsLock)));
-}
-
-static void typeUnicode(uint32_t character) {
-  bool capsLock = getCapsLockState();
-  if (HostOS.os() == kaleidoscope::hostos::WINDOWS && wasShiftKeyActive()) {
-    // Hex-input on Windows only works when shift is NOT pressed
-    kaleidoscope::hid::releaseRawKey(Key_LeftShift);
-    kaleidoscope::hid::releaseRawKey(Key_RightShift);
-    kaleidoscope::hid::sendKeyboardReport();
-  }
-  if (capsLock) { toggleCapsLock(); }
-  Unicode.type(character);
-  if (capsLock) { toggleCapsLock(); }
-}
-
-class ALongPress final : public LongPress {
-  void onToggledOn() { Macros.play(MACRO(T(A))); }
-  void onLongPress() { backspace(); typeUnicode(isShifted() ? 0xC4 : 0xE4); }
-} aLongPress;
-
-class ELongPress final : public LongPress {
-  void onToggledOn() { Macros.play(MACRO(T(E))); }
-  void onLongPress() { backspace(); typeUnicode(0x20AC); }
-} eLongPress;
-
-class OLongPress final : public LongPress {
-  void onToggledOn() { Macros.play(MACRO(T(O))); }
-  void onLongPress() { backspace(); typeUnicode(isShifted() ? 0xD6 : 0xF6); }
-} oLongPress;
-
-class ULongPress final : public LongPress {
-  void onToggledOn() { Macros.play(MACRO(T(U))); }
-  void onLongPress() { backspace(); typeUnicode(isShifted() ? 0xDC : 0xFC); }
-} uLongPress;
-
-class SLongPress final : public LongPress {
-  void onToggledOn() { Macros.play(MACRO(T(S))); }
-  void onLongPress() { backspace(); typeUnicode(0xDF); }
-} sLongPress;
-
 const macro_t *macroAction(uint8_t macroIndex, uint8_t keyState) {
   switch (macroIndex) {
   case MACRO_VERSION_INFO:
     versionInfoMacro(keyState);
-    break;
-  case MACRO_SWITCH_OS:
-    switchOsMacro(keyState);
-    break;
-  case MACRO_OS_INFO:
-    osInfoMacro(keyState);
     break;
   case MACRO_ANY:
     anyKeyMacro(keyState);
@@ -398,25 +268,9 @@ const macro_t *macroAction(uint8_t macroIndex, uint8_t keyState) {
   case MACRO_TICKET_PREFIX:
     ticketPrefixMacro(keyState);
     break;
-  case MACRO_E_EURO:
-    eLongPress.onKeyswitchEvent(keyState);
-    break;
-  case MACRO_O_OE:
-    oLongPress.onKeyswitchEvent(keyState);
-    break;
-  case MACRO_U_UE:
-    uLongPress.onKeyswitchEvent(keyState);
-    break;
-  case MACRO_A_AE:
-    aLongPress.onKeyswitchEvent(keyState);
-    break;
-  case MACRO_S_SS:
-    sLongPress.onKeyswitchEvent(keyState);
-    break;
   }
   return MACRO_NONE;
 }
-
 
 
 /** toggleLedsOnSuspendResume toggles the LEDs off when the host goes to sleep,
@@ -469,7 +323,7 @@ static void toggleKeyboardProtocol(uint8_t combo_index) {
 }
 
 static void toggleCapsLockAction(uint8_t combo_index) {
-  toggleCapsLock();
+  Macros.play(MACRO(T(CapsLock)));
 }
 
 /**
