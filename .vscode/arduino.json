@@ -1,6 +1,5 @@
 {
     "sketch": "Model01-Firmware.ino",
     "board": "keyboardio:avr:model01",
-    "port": "/dev/ttyACM0",
     "programmer": "AVRISP mkII"
 }
