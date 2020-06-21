@@ -90,7 +90,7 @@ enum { MACRO_VERSION_INFO,
        MACRO_SWITCH_OS,
        MACRO_OS_INFO,
        MACRO_ANY,
-       MACRO_ISSUENUMBER,
+       MACRO_TICKET_PREFIX,
        MACRO_A_AE, // aAäÄ
        MACRO_E_EURO, // e€
        MACRO_O_OE, // oOöÖ
@@ -159,7 +159,7 @@ KEYMAPS(
 
   [PRIMARY] = KEYMAP_STACKED
   (M(MACRO_SWITCH_OS), Key_1,         Key_2,         Key_3,           Key_4, Key_5, Key_LEDEffectNext,
-   Key_Backtick,       Key_Q,         Key_W,         M(MACRO_E_EURO), Key_R, Key_T, M(MACRO_ISSUENUMBER),
+   Key_Backtick,       Key_Q,         Key_W,         M(MACRO_E_EURO), Key_R, Key_T, M(MACRO_TICKET_PREFIX),
    Key_Escape,         M(MACRO_A_AE), M(MACRO_S_SS), Key_D,           Key_F, Key_G,
    Key_Tab,            Key_Z,         Key_X,         Key_C,           Key_V, Key_B, Key_PageDown,
    Key_LeftControl,    Key_Backspace, Key_LeftShift, Key_LeftGui,
@@ -272,9 +272,20 @@ static void anyKeyMacro(uint8_t keyState) {
     Kaleidoscope.hid().keyboard().pressKey(lastKey, toggledOn);
 }
 
-static void issueNumberMacro(uint8_t keyState) {
+static bool isShiftHeld() {
+  return kaleidoscope::hid::isModifierKeyActive(Key_LeftShift) ||
+    kaleidoscope::hid::isModifierKeyActive(Key_RightShift);
+}
+
+static void ticketPrefixMacro(uint8_t keyState) {
   if (keyToggledOn(keyState)) {
-    Macros.type(PSTR("DEV_LOND2PLUS-"));
+    if (isShiftHeld()) {
+      kaleidoscope::hid::releaseRawKey(Key_LeftShift);
+      kaleidoscope::hid::releaseRawKey(Key_RightShift);
+      Macros.type(PSTR("DEV_LOND2PLUS-"));
+    } else {
+      Macros.type(PSTR("DEV_TEAM42-"));
+    }
   }
 }
 
@@ -384,8 +395,8 @@ const macro_t *macroAction(uint8_t macroIndex, uint8_t keyState) {
   case MACRO_ANY:
     anyKeyMacro(keyState);
     break;
-  case MACRO_ISSUENUMBER:
-    issueNumberMacro(keyState);
+  case MACRO_TICKET_PREFIX:
+    ticketPrefixMacro(keyState);
     break;
   case MACRO_E_EURO:
     eLongPress.onKeyswitchEvent(keyState);
